@@ -1,7 +1,7 @@
 /*=============================================================================
  * CityShrimp's Cover Tiles
  * CS_CoverTiles.js
- * Version: 1.0.0
+ * Version: 1.0.0a
  * Free for commercial and non commercial use.
  *=============================================================================*/
 
@@ -26,7 +26,7 @@
  * ============================================================================
  * 
  * Get the latest version of this script on 
- * https://github.com/cityshrimp/rmmv_fow/blob/master/CS_FogOfWar.js
+ * https://github.com/cityshrimp/rmmv/blob/master/CS_CoverTiles.js
  * 
  *=============================================================================
 */
