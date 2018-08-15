@@ -1,7 +1,7 @@
 /*=============================================================================
  * CityShrimp's Cover Tiles
  * CS_CoverTiles.js
- * Version: 1.0.0a
+ * Version: 1.0.1
  * Free for commercial and non commercial use.
  *=============================================================================*/
 
@@ -32,7 +32,7 @@
 */
 
 var Imported = Imported || {};
-Imported['CS_CoverTiles'] = "1.0.0";
+Imported['CS_CoverTiles'] = "1.0.1";
 
 var CS_CoverTiles = CS_CoverTiles || {};
 
@@ -43,40 +43,10 @@ var CS_CoverTiles = CS_CoverTiles || {};
     $.parameters = PluginManager.parameters("CS_CoverTiles") || {};
     $._cover_region_id = Number($.parameters['Cover RegionId'] || 19);
     $._block_region_id = Number($.parameters['Block RegionId'] || 20);
-    
-    // ===Alias Game_Map===
-    var old_Game_Map_setup = Game_Map.prototype.setup;
-    Game_Map.prototype.setup = function(mapId) {
-        old_Game_Map_setup.call(this, mapId);
-        this.initSetup();
-    };
-    
-    Game_Map.prototype.initSetup = function() {
-        var width = this.width();
-        var height = this.height();
-        for (var x = 0; x < width; x++) {
-            for (var y = 0; y < height; y++) {
-                var id = this.regionId(x, y);
-                if (id == $._cover_region_id) {
-                    this.addTileId((2 * height + y) * width + x, id);
-                    $dataMap.data[(2 * height + y) * width + x] = $dataMap.data[(0 * height + y) * width + x];
-                    $dataMap.data[(0 * height + y) * width + x] = 0;
-                }
-            }
-        }
-    }
-    
-    Game_Map.prototype.addTileId = function(tileId, regionId) {
-        if ($.tile_flag_set == undefined)
-            $.tile_flag_set = {};
-        
-        $.tile_flag_set[tileId] = regionId;
-    }
+    $.tile_flag_set = {};
     
     var old_Game_Map_checkPassage = Game_Map.prototype.checkPassage;
     Game_Map.prototype.checkPassage = function(x, y, bit) {
-        if ($.tile_flag_set == undefined)
-            $.tile_flag_set = {};
         var rid = this.regionId(x, y);
         if (rid == $._block_region_id)
             return false;
@@ -125,8 +95,8 @@ var CS_CoverTiles = CS_CoverTiles || {};
             this._drawTile(upperLayer, tileId2, dx, dy);
             this._drawTile(upperLayer, tileId3, dx, dy);
         } else {
-            if ((rtileId2 in $.tile_flag_set) && ($.tile_flag_set[rtileId2] == $._cover_region_id)) {
-                this._drawTile(upperLayer, tileId2, dx, dy);
+            if ($gameMap.regionId(mx, my) == $._cover_region_id) {
+                this._drawTile(upperLayer, tileId0, dx, dy);
             } else if (this._isHigherTile(tileId2)) {
                 this._drawTile(upperLayer, tileId2, dx, dy);
             } else {
@@ -137,6 +107,87 @@ var CS_CoverTiles = CS_CoverTiles || {};
             } else {
                 this._drawTile(lowerLayer, tileId3, dx, dy);
             }
+        }
+    };
+    
+    Tilemap.prototype._paintTiles = function(startX, startY, x, y) {
+        var tableEdgeVirtualId = 10000;
+        var mx = startX + x;
+        var my = startY + y;
+        var dx = (mx * this._tileWidth).mod(this._layerWidth);
+        var dy = (my * this._tileHeight).mod(this._layerHeight);
+        var lx = dx / this._tileWidth;
+        var ly = dy / this._tileHeight;
+        var tileId0 = this._readMapData(mx, my, 0);
+        var tileId1 = this._readMapData(mx, my, 1);
+        var tileId2 = this._readMapData(mx, my, 2);
+        var tileId3 = this._readMapData(mx, my, 3);
+        var shadowBits = this._readMapData(mx, my, 4);
+        var upperTileId1 = this._readMapData(mx, my - 1, 1);
+        var lowerTiles = [];
+        var upperTiles = [];
+
+        if (this._isHigherTile(tileId0)) {
+            upperTiles.push(tileId0);
+        } else {
+            lowerTiles.push(tileId0);
+        }
+        if (this._isHigherTile(tileId1)) {
+            upperTiles.push(tileId1);
+        } else {
+            lowerTiles.push(tileId1);
+        }
+
+        lowerTiles.push(-shadowBits);
+
+        if (this._isTableTile(upperTileId1) && !this._isTableTile(tileId1)) {
+            if (!Tilemap.isShadowingTile(tileId0)) {
+                lowerTiles.push(tableEdgeVirtualId + upperTileId1);
+            }
+        }
+
+        if (this._isOverpassPosition(mx, my)) {
+            upperTiles.push(tileId2);
+            upperTiles.push(tileId3);
+        } else {
+            if ($gameMap.regionId(mx, my) == $._cover_region_id) {
+                upperTiles.push(tileId0);
+            } else if (this._isHigherTile(tileId2)) {
+                upperTiles.push(tileId2);
+            } else {
+                lowerTiles.push(tileId2);
+            }
+            if (this._isHigherTile(tileId3)) {
+                upperTiles.push(tileId3);
+            } else {
+                lowerTiles.push(tileId3);
+            }
+        }
+
+        var lastLowerTiles = this._readLastTiles(0, lx, ly);
+        if (!lowerTiles.equals(lastLowerTiles) ||
+                (Tilemap.isTileA1(tileId0) && this._frameUpdated)) {
+            this._lowerBitmap.clearRect(dx, dy, this._tileWidth, this._tileHeight);
+            for (var i = 0; i < lowerTiles.length; i++) {
+                var lowerTileId = lowerTiles[i];
+                if (lowerTileId < 0) {
+                    this._drawShadow(this._lowerBitmap, shadowBits, dx, dy);
+                } else if (lowerTileId >= tableEdgeVirtualId) {
+                    this._drawTableEdge(this._lowerBitmap, upperTileId1, dx, dy);
+                } else {
+                    this._drawTile(this._lowerBitmap, lowerTileId, dx, dy);
+                }
+            }
+            this._writeLastTiles(0, lx, ly, lowerTiles);
+        }
+
+        var lastUpperTiles = this._readLastTiles(1, lx, ly);
+        if (!upperTiles.equals(lastUpperTiles)) {
+            this._upperBitmap.clearRect(dx, dy, this._tileWidth, this._tileHeight);
+            for (var j = 0; j < upperTiles.length; j++) {
+                this._drawTile(this._upperBitmap, upperTiles[j], dx, dy);
+            }
+            this._writeLastTiles(1, lx, ly, upperTiles);
         }
     };
     
