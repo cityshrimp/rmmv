@@ -1,7 +1,7 @@
 /*=============================================================================
  * CityShrimp's Cover Tiles
  * CS_CoverTiles.js
- * Version: 1.0.1
+ * Version: 1.0.2
  * Free for commercial and non commercial use.
  *=============================================================================*/
 
@@ -11,6 +11,10 @@
  * @author CityShrimp
  *
  * ===Parameter List===
+ *
+ * @param Pass RegionID
+ * @desc This region ID will cause tile to become passable.
+ * @default 18
  *
  * @param Cover RegionID
  * @desc This region ID will cause tile to become a cover (passable + higher than events).
@@ -32,7 +36,7 @@
 */
 
 var Imported = Imported || {};
-Imported['CS_CoverTiles'] = "1.0.1";
+Imported['CS_CoverTiles'] = "1.0.2";
 
 var CS_CoverTiles = CS_CoverTiles || {};
 
@@ -41,6 +45,7 @@ var CS_CoverTiles = CS_CoverTiles || {};
     
     // Load parameters
     $.parameters = PluginManager.parameters("CS_CoverTiles") || {};
+    $._pass_region_id = Number($.parameters['Pass RegionId'] || 18);
     $._cover_region_id = Number($.parameters['Cover RegionId'] || 19);
     $._block_region_id = Number($.parameters['Block RegionId'] || 20);
     $.tile_flag_set = {};
@@ -50,7 +55,7 @@ var CS_CoverTiles = CS_CoverTiles || {};
         var rid = this.regionId(x, y);
         if (rid == $._block_region_id)
             return false;
-        if (rid == $._cover_region_id)
+        if (rid == $._pass_region_id || rid == $._cover_region_id)
             return true;
         return old_Game_Map_checkPassage.call(this, x, y, bit);
     }
@@ -73,12 +78,12 @@ var CS_CoverTiles = CS_CoverTiles || {};
         var rtileId2 = (2 * $dataMap.height + my) * $dataMap.width + mx;
         var rtileId3 = (3 * $dataMap.height + my) * $dataMap.width + mx;
 
-        if (this._isHigherTile(tileId0)) {
+        if (this._isHigherTile(tileId0) || $gameMap.regionId(mx, my) == $._cover_region_id) {
             this._drawTile(upperLayer, tileId0, dx, dy);
         } else {
             this._drawTile(lowerLayer, tileId0, dx, dy);
         }
-        if (this._isHigherTile(tileId1)) {
+        if (this._isHigherTile(tileId1) || $gameMap.regionId(mx, my) == $._cover_region_id) {
             this._drawTile(upperLayer, tileId1, dx, dy);
         } else {
             this._drawTile(lowerLayer, tileId1, dx, dy);
@@ -95,14 +100,13 @@ var CS_CoverTiles = CS_CoverTiles || {};
             this._drawTile(upperLayer, tileId2, dx, dy);
             this._drawTile(upperLayer, tileId3, dx, dy);
         } else {
-            if ($gameMap.regionId(mx, my) == $._cover_region_id) {
-                this._drawTile(upperLayer, tileId0, dx, dy);
-            } else if (this._isHigherTile(tileId2)) {
+            if (this._isHigherTile(tileId2) || $gameMap.regionId(mx, my) == $._cover_region_id) {
                 this._drawTile(upperLayer, tileId2, dx, dy);
             } else {
                 this._drawTile(lowerLayer, tileId2, dx, dy);
             }
-            if (this._isHigherTile(tileId3)) {
+            
+            if (this._isHigherTile(tileId3) || $gameMap.regionId(mx, my) == $._cover_region_id) {
                 this._drawTile(upperLayer, tileId3, dx, dy);
             } else {
                 this._drawTile(lowerLayer, tileId3, dx, dy);
@@ -127,12 +131,12 @@ var CS_CoverTiles = CS_CoverTiles || {};
         var lowerTiles = [];
         var upperTiles = [];
 
-        if (this._isHigherTile(tileId0)) {
+        if (this._isHigherTile(tileId0) || $gameMap.regionId(mx, my) == $._cover_region_id) {
             upperTiles.push(tileId0);
         } else {
             lowerTiles.push(tileId0);
         }
-        if (this._isHigherTile(tileId1)) {
+        if (this._isHigherTile(tileId1) || $gameMap.regionId(mx, my) == $._cover_region_id) {
             upperTiles.push(tileId1);
         } else {
             lowerTiles.push(tileId1);
@@ -150,14 +154,12 @@ var CS_CoverTiles = CS_CoverTiles || {};
             upperTiles.push(tileId2);
             upperTiles.push(tileId3);
         } else {
-            if ($gameMap.regionId(mx, my) == $._cover_region_id) {
-                upperTiles.push(tileId0);
-            } else if (this._isHigherTile(tileId2)) {
+            if (this._isHigherTile(tileId2) || $gameMap.regionId(mx, my) == $._cover_region_id) {
                 upperTiles.push(tileId2);
             } else {
                 lowerTiles.push(tileId2);
             }
-            if (this._isHigherTile(tileId3)) {
+            if (this._isHigherTile(tileId3) || $gameMap.regionId(mx, my) == $._cover_region_id) {
                 upperTiles.push(tileId3);
             } else {
                 lowerTiles.push(tileId3);
